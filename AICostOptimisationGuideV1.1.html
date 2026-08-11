@@ -1,0 +1,691 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Token &amp; Model Cost Optimization Playbook</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;font-size:14px;color:#1f2937;background:#fff;line-height:1.5}
+  .wrap{max-width:900px;margin:0 auto;padding:1.5rem 1rem 3rem}
+
+  /* Header */
+  .header{background:linear-gradient(135deg,#12003a 0%,#3b0094 50%,#7c3aed 100%);border-radius:12px;padding:2rem 2.25rem 1.75rem;margin-bottom:1.5rem;color:#fff;position:relative;overflow:hidden}
+  .header::before{content:"";position:absolute;top:-50px;right:-50px;width:260px;height:260px;border-radius:50%;border:40px solid rgba(255,255,255,.04);pointer-events:none}
+  .header::after{content:"";position:absolute;bottom:-70px;right:80px;width:180px;height:180px;border-radius:50%;border:28px solid rgba(255,255,255,.03);pointer-events:none}
+  .header .eyebrow{font-size:10px;font-weight:700;letter-spacing:.14em;text-transform:uppercase;color:#c4b5fd;margin-bottom:.85rem}
+  .header h1{font-size:24px;font-weight:700;line-height:1.2;color:#fff;margin:0 0 .5rem}
+  .header .tagline{font-size:13px;font-weight:500;color:#ddd6fe;margin-bottom:.2rem}
+  .header .sub{font-size:11px;color:#a78bfa;margin-bottom:1.1rem}
+  .header .rule{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.18);border-radius:8px;padding:.45rem 1rem;font-size:12px;display:inline-flex;align-items:center;gap:.35rem}
+  .header .rule strong{color:#fde68a}
+
+  /* Tabs */
+  .tabs{display:flex;gap:0;border-bottom:2px solid #e5e7eb;margin-bottom:1.5rem;overflow-x:auto}
+  .tab{flex:1 1 0;text-align:center;padding:.6rem .75rem;font-size:13px;cursor:pointer;color:#6b7280;border-bottom:3px solid transparent;margin-bottom:-2px;white-space:nowrap;transition:all .15s;font-weight:500}
+  .tab:hover{color:#7c3aed;background:#faf8ff}
+  .tab.active{color:#7c3aed;border-bottom-color:#7c3aed}
+  .panel{display:none}.panel.active{display:block}
+
+  /* Section label */
+  .slabel{font-size:11px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.06em;margin-bottom:.75rem}
+
+  /* Model cards */
+  .model-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:1.25rem}
+  .model-card{border-radius:10px;border:1.5px solid #e5e7eb;padding:1rem 1.1rem;background:#fff}
+  .model-card h3{font-size:14px;font-weight:600;margin-bottom:3px}
+  .model-card .price{font-size:12px;color:#9ca3af;margin-bottom:.5rem}
+  .model-card .desc{font-size:12px;color:#4b5563;line-height:1.5;margin-bottom:.6rem}
+  .tag{display:inline-block;font-size:11px;padding:2px 8px;border-radius:20px;margin:2px 2px 0 0;font-weight:500}
+  .tg{background:#dcfce7;color:#15803d}.tb{background:#dbeafe;color:#1d4ed8}
+  .ta{background:#fef3c7;color:#92400e}.tp{background:#fce7f3;color:#9d174d}
+
+  /* Rule boxes */
+  .rbox{background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;padding:1rem 1.1rem;margin-bottom:.85rem}
+  .rbox h3{font-size:13px;font-weight:600;color:#7c3aed;margin-bottom:.5rem}
+  .rlist{list-style:none;display:flex;flex-direction:column;gap:5px}
+  .rlist li{font-size:13px;color:#4b5563;padding-left:1.1rem;position:relative;line-height:1.4}
+  .rlist li::before{content:"•";position:absolute;left:0;color:#9ca3af}
+  .rlist li.warn{color:#dc2626}
+
+  /* Role picker */
+  .role-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-bottom:1rem}
+  .chip{border:1.5px solid #d1d5db;border-radius:8px;padding:.5rem .75rem;cursor:pointer;font-size:12px;color:#4b5563;background:#fff;transition:all .15s;line-height:1.3;user-select:none;font-weight:500}
+  .chip:hover{border-color:#7c3aed;color:#7c3aed;background:#f5f3ff}
+  .chip.active{border-color:#7c3aed;background:#f5f3ff;color:#6d28d9;font-weight:600}
+  .task-grid{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-bottom:1rem}
+  .tchip{border:1px solid #e5e7eb;border-radius:8px;padding:.5rem .75rem;cursor:pointer;font-size:12px;color:#4b5563;background:#fff;transition:all .15s;user-select:none}
+  .tchip:hover{border-color:#7c3aed;color:#7c3aed;background:#f5f3ff}
+  .tchip.active{border-color:#7c3aed;background:#f5f3ff;color:#6d28d9;font-weight:600}
+  .tchip .tsub{font-size:11px;color:#9ca3af;display:block;margin-top:1px}
+  .tchip.active .tsub{color:#93c5fd}
+
+  /* Result */
+  .rbox-result{border:1.5px solid #e5e7eb;border-radius:10px;overflow:hidden;margin-top:.5rem}
+  .rhead{padding:.85rem 1rem;display:flex;align-items:center;gap:10px;border-bottom:1px solid #e5e7eb;background:#f9fafb}
+  .mbadge{font-size:12px;font-weight:600;padding:.3rem .7rem;border-radius:20px}
+  .mbh{background:#dcfce7;color:#15803d}.mbs{background:#dbeafe;color:#1d4ed8}
+  .mbo{background:#fef3c7;color:#92400e}.mbf{background:#fce7f3;color:#9d174d}
+  .rcols{display:grid;grid-template-columns:1fr 1fr 1fr}
+  .rcol{padding:.85rem 1rem;border-right:1px solid #e5e7eb;font-size:12px}
+  .rcol:last-child{border-right:none}
+  .rclabel{font-size:10px;font-weight:600;color:#9ca3af;text-transform:uppercase;letter-spacing:.05em;margin-bottom:.4rem}
+  .wli{color:#4b5563;padding-left:.9rem;position:relative;line-height:1.4;margin-bottom:3px;font-size:12px}
+  .wli::before{content:"→";position:absolute;left:0;color:#9ca3af;font-size:11px}
+  .empty-s{font-size:13px;color:#9ca3af;padding:1.25rem;text-align:center;background:#f9fafb;border-radius:10px;border:1px dashed #d1d5db}
+  .divider{border:none;border-top:1px solid #e5e7eb;margin:1.1rem 0}
+
+  /* SDD table */
+  .sddt{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:1rem;border:1px solid #e5e7eb;border-radius:10px;overflow:hidden}
+  .sddt th{background:#3b0094;color:#fff;font-weight:600;font-size:11px;text-transform:uppercase;letter-spacing:.04em;padding:.65rem .85rem;text-align:left}
+  .sddt td{padding:.65rem .85rem;border-bottom:1px solid #e5e7eb;color:#4b5563;vertical-align:top;line-height:1.4}
+  .sddt tr:last-child td{border-bottom:none}
+  .sddt tr:nth-child(even) td{background:#f9fafb}
+  .lbadge{display:inline-block;font-size:10px;font-weight:600;padding:2px 8px;border-radius:20px}
+  .tac{display:block;margin-top:.35rem;padding-top:.35rem;border-top:1px dashed #e5e7eb;color:#1d4ed8;font-size:11px;line-height:1.45}
+  .tac b{color:#1d4ed8;font-weight:600}
+  .sddt td code{font-size:11px}
+  .ll{background:#dcfce7;color:#15803d}.lm{background:#fef3c7;color:#92400e}.lh{background:#fce7f3;color:#9d174d}
+
+  /* Workflow tabs */
+  .wf-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:1rem}
+  .wchip{border:1.5px solid #d1d5db;border-radius:20px;padding:.3rem .9rem;cursor:pointer;font-size:12px;color:#4b5563;background:#fff;transition:all .15s;font-weight:500}
+  .wchip.active{background:#6d28d9;color:#fff;border-color:#6d28d9}
+  .wfp{display:none}.wfp.active{display:block}
+
+  /* Tips */
+  .tips-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .tip-card{border:1px solid #e5e7eb;border-radius:10px;padding:1rem;background:#fff}
+  .tip-card h3{font-size:13px;font-weight:600;color:#6d28d9;margin-bottom:.6rem}
+  .tip-card ul{list-style:none;display:flex;flex-direction:column;gap:5px}
+  .tip-card ul li{font-size:12px;color:#4b5563;padding-left:1.1rem;position:relative;line-height:1.4}
+  .tip-card ul li::before{content:"✓";position:absolute;left:0;color:#2563eb;font-size:11px;font-weight:bold}
+  .tip-card.wide{grid-column:1/-1}
+  .tip-card.wide ul{display:grid;grid-template-columns:1fr 1fr;gap:5px 20px}
+
+  /* Checklist */
+  .cl-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+  .cl-card{border:1px solid #e5e7eb;border-radius:10px;padding:1rem 1.1rem;background:#fff}
+  .cl-card h3{font-size:13px;font-weight:600;color:#6d28d9;margin-bottom:.6rem}
+  .cl-card ul{list-style:none;display:flex;flex-direction:column;gap:6px}
+  .cl-card ul li{font-size:12px;color:#374151;padding-left:1.4rem;position:relative;line-height:1.4}
+  .cl-card ul li::before{content:"☐";position:absolute;left:0;color:#2563eb;font-weight:bold}
+  .cl-card ul li.warn{color:#dc2626}
+
+  /* Responsive */
+  @media(max-width:600px){
+    .model-grid,.role-grid,.task-grid,.tips-grid,.cl-grid,.rcols{grid-template-columns:1fr}
+    #tab-sdd div[style*="grid-template-columns:1fr 1fr"]{grid-template-columns:1fr !important}
+    .tip-card.wide ul{grid-template-columns:1fr}
+  }
+
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:.92em;background:#f3f4f6;border:1px solid #e5e7eb;border-radius:4px;padding:.05em .35em;color:#374151}
+  .sddt td code{white-space:nowrap}
+  .footer{margin-top:2rem;padding-top:1rem;border-top:1px solid #e5e7eb;font-size:11px;color:#9ca3af;text-align:center}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header" style="text-align:center">
+
+    <h1>AI Token &amp; Model Cost Optimization Playbook</h1>
+    <div class="tagline">Spend Smarter, Not Harder: Every Token Should Earn Its Cost</div>
+    <div class="sub">Using Claude Strategically Across the Engineering Lifecycle</div>
+    <div style="display:flex;justify-content:center;gap:12px;flex-wrap:wrap;margin-top:.75rem;margin-bottom:.25rem">
+      <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:.3rem .85rem;font-size:11px;color:#e0d9ff;display:inline-flex;align-items:center;gap:.4rem">
+        &#128197; <strong style="color:#fde68a">Updated:</strong>&nbsp;August 10, 2026
+      </div>
+      <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:.3rem .85rem;font-size:11px;color:#e0d9ff;display:inline-flex;align-items:center;gap:.4rem">
+        &#9989; <strong style="color:#fde68a">Verified:</strong>&nbsp;August 10, 2026 vs Anthropic docs
+      </div>
+      <div style="background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.15);border-radius:6px;padding:.3rem .85rem;font-size:11px;color:#e0d9ff;display:inline-flex;align-items:center;gap:.4rem">
+        &#128260; <strong style="color:#fde68a">Review cadence:</strong>&nbsp;Monthly &mdash; Anthropic ships fast
+      </div>
+    </div>
+    <div style="display:flex;justify-content:center;margin-top:.25rem">
+      <div class="rule">&#128161;&nbsp;<strong>Golden rule:</strong> Use the cheapest tier that does the job correctly.</div>
+    </div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" onclick="switchTab('model')">&#128268; Model Guide</div>
+    <div class="tab" onclick="switchTab('role')">&#127775; Role Playbook</div>
+    <div class="tab" onclick="switchTab('sdd')">&#128196; SDD Guide</div>
+    <div class="tab" onclick="switchTab('workflow')">&#9881; Workflows</div>
+    <div class="tab" onclick="switchTab('tips')">&#128161; Tips &amp; Tricks</div>
+  </div>
+
+  <!-- ── MODEL GUIDE ── -->
+  <div class="panel active" id="tab-model">
+    <div class="slabel">Model tiers — start cheap, escalate only when output quality demands it</div>
+    <div class="model-grid">
+      <div class="model-card" style="border-color:#86efac">
+        <h3>&#129002; Haiku 4.5</h3>
+        <div class="price">$1 / $5 per MTok &nbsp;·&nbsp; Batch: $0.50/$2.50 &nbsp;·&nbsp; Cache hits: $0.10 &nbsp;·&nbsp; <strong>200K context, 64K max output</strong><br><em style="color:#9ca3af">The only current model without 1M context. Needs a 4,096-token prefix to cache &mdash; the highest floor in the lineup. <strong>Does not support the <code>effort</code> parameter</strong>, and uses extended thinking rather than adaptive thinking.</em></div>
+        <div class="desc">Simple, high-volume, pattern-matching. If a junior engineer answers it in under 2 min — this is the tier.</div>
+        <div><span class="tag tg">Lookups</span><span class="tag tg">Triage</span><span class="tag tg">Autocomplete</span><span class="tag tg">Boilerplate</span><span class="tag tg">Log summaries</span><span class="tag tg">Bulk test data</span></div>
+      </div>
+      <div class="model-card" style="border-color:#93c5fd">
+        <h3>&#128309; Sonnet 5 <span style="font-size:11px;font-weight:500;color:#9ca3af">(current) &nbsp;1M context &middot; 128K output</span></h3>
+        <div class="price">Sonnet 5: <strong style="color:#dc2626">$2 / $10 per MTok — intro rate ENDS Aug 31, 2026</strong>; standard $3/$15 from Sep 1 &nbsp;·&nbsp; Sonnet 4.6 (previous gen, still active): $3/$15 &nbsp;·&nbsp; Batch: $1/$5 now, $1.50/$7.50 from Sep 1 &nbsp;·&nbsp; Cache hits: $0.20 &rarr; $0.30</div>
+        <div class="desc">Day-to-day workhorse. Real reasoning, multi-file context, production-quality output. Stakes recoverable.</div>
+        <div><span class="tag tb">Coding</span><span class="tag tb">Review</span><span class="tag tb">Debugging</span><span class="tag tb">Docs</span><span class="tag tb">Refactors</span><span class="tag tb">PM/UX tasks</span></div>
+      </div>
+      <div class="model-card" style="border-color:#fcd34d">
+        <h3>&#128993; Opus 5 <span style="font-size:11px;font-weight:500;color:#9ca3af">(current flagship) &nbsp;1M context &middot; 128K output</span></h3>
+        <div class="price">$5 input &nbsp;/&nbsp; $25 output &nbsp;per MTok &nbsp;·&nbsp; Batch: $2.50/$12.50 &nbsp;·&nbsp; Cache hits: $0.50 &nbsp;·&nbsp; <em style="color:#9ca3af">Fast Mode $10/$50 is a gated research preview (Opus 5 / 4.8 only, no Batch) — lowering effort is the cheaper speed lever</em></div>
+        <div class="desc">High-stakes, hard-to-reverse decisions where the cost of a wrong answer justifies the premium. Note the tier is about reasoning difficulty, not context size &mdash; Sonnet 5, Opus 5 and Fable 5 all carry 1M on the Claude API, so a bigger input is rarely the reason to move up. <strong>On Bedrock, Google Cloud and Microsoft Foundry, Opus may run with a 200K window</strong> &mdash; check before assuming 1M on a partner platform. <em style="color:#9ca3af">Opus 4.8 remains active at the same $5/$25 rate but is the previous generation. Same rate card &ne; same bill: Opus 5 thinks by default, so cap <code>effort</code> before assuming a like-for-like swap is cost-neutral.</em></div>
+        <div><span class="tag ta">Security review</span><span class="tag ta">Compliance</span><span class="tag ta">Cross-system arch</span><span class="tag ta">Large codebase</span></div>
+      </div>
+      <div class="model-card" style="border-color:#f9a8d4">
+        <h3>&#128308; Fable 5 <span style="font-size:11px;font-weight:500;color:#9ca3af">1M context &middot; 128K output</span></h3>
+        <div class="price">$10 input &nbsp;/&nbsp; $50 output &nbsp;per MTok &nbsp;·&nbsp; Batch: $5/$25 &nbsp;·&nbsp; Cache hits: $1 &nbsp;&#x26A0; Use deliberately</div>
+        <div class="desc">Hardest long-horizon tasks. Multi-repo agentic coding, whole-platform architecture, P0 incidents. <em style="color:#9ca3af">Mythos 5 is the same capability class under trusted access only — confirm whether we hold access before planning around it.</em></div>
+        <div><span class="tag tp">Multi-repo agent</span><span class="tag tp">Platform redesign</span><span class="tag tp">P0 incidents</span><span class="tag tp">Multi-repo security audit</span></div>
+      </div>
+    </div>
+
+    <div class="rbox">
+      <h3>Routing rule of thumb</h3>
+      <ul class="rlist">
+        <li>Junior engineer answers in &lt;2 min, no deep context &rarr; <strong>Haiku 4.5</strong></li>
+        <li>Needs real reasoning, multi-file context, stakes recoverable &rarr; <strong>Sonnet 5</strong></li>
+        <li>Mistake is expensive, or a long agent run needs to hold its reasoning together &rarr; <strong>Opus 5</strong></li>
+        <li>Hardest long-horizon reasoning, multi-repo agentic coding &rarr; <strong>Fable 5</strong></li>
+        <li class="warn">&#x26A0; <strong>Opus 4.1 retired on the Claude API on Aug 5, 2026</strong> — calls to <code>claude-opus-4-1-20250805</code> now return errors there. Replace with <code>claude-opus-5</code>. If we call Claude through a cloud platform rather than the Claude API, check that platform's own model lifecycle.</li>
+        <li class="warn">&#x26A0; Audit for hard-coded legacy model IDs generally — Sonnet 4 and Opus 4 retired June 15, 2026, though both carry the same partner-platform carve-out (Sonnet 4 on Bedrock and Google Cloud, Opus 4 on Google Cloud). The Claude 3 and 3.5 generations are fully retired.</li>
+      </ul>
+    </div>
+
+    <div class="rbox">
+      <h3>Cost multipliers to watch</h3>
+      <ul class="rlist">
+        <li>Output tokens cost several times more than input — response length is the line item to control hardest</li>
+        <li>Repeated large context sent fresh every call is the single biggest avoidable cost — cache it, but only where the same prefix gets reused several times</li>
+        <li>Real-time/interactive is priced for latency — batch async work is ~50% cheaper</li>
+        <li>Pinning inference to US-only (<code>inference_geo</code>) costs <strong>1.1&times; on everything</strong> — input, output, cache writes and cache reads. Worth knowing before data-residency is set as a default</li>
+        <li class="warn">&#x26A0; <strong>Delete carried-over verification instructions.</strong> Opus 5 verifies its own work unprompted, so prompts still saying &ldquo;include a final verification step&rdquo; or &ldquo;use a subagent to verify&rdquo; cause <em>over</em>-verification &mdash; tokens spent on work the model already did. Check your <code>CLAUDE.md</code> and skill bodies for these</li>
+        <li>Opus 4.7+, Opus 5, Fable 5 and Sonnet 5 use a newer tokenizer. Anthropic puts the increase at <strong>approximately 30% more tokens for the same text</strong>, with the exact figure depending on content. Re-baseline any budget, <code>max_tokens</code> limit or token count carried over from Sonnet 4.6 or Opus 4.6 &mdash; and note the 1M window holds correspondingly less text</li>
+        <li class="warn">&#x26A0; <strong>Thinking tokens bill at the output rate</strong>, and Opus 5 thinks by default where Opus 4.8 did not. Its default responses also run longer. Since <code>max_tokens</code> is a hard cap on <em>thinking plus response text</em>, revisit limits carried over from Opus 4.8. Anthropic's own framing is that <strong>&ldquo;effort matters more&rdquo; on Opus 5</strong>, with <code>low</code> and <code>medium</code> giving strong quality at a fraction of the tokens &mdash; so measure your own before/after rather than trusting a headline multiplier</li>
+        <li class="warn">&#x26A0; <strong>Sonnet 5 cost change:</strong> Introductory pricing of $2/$10 per MTok runs through August 31, 2026; standard pricing of $3/$15 takes effect September 1, representing a 50% increase in the per-token rate. Separately, and already in effect, Sonnet 5 uses a newer tokenizer that produces approximately 30% more tokens for the same text than Sonnet 4.6. The exact increase depends on content and workload characteristics. If you're benchmarking against a Sonnet 4.6 baseline, your September bill may reflect both higher token counts and the higher per-token rate &mdash; budget for both, not just the rate change.</li>
+      </ul>
+    </div>
+
+    <div class="rbox">
+      <h3>Which surface to use</h3>
+      <ul class="rlist">
+        <li><strong>Claude Code in VS Code / JetBrains</strong> — fast, single-function fixes with inline diffs. Low per call but watch frequency</li>
+        <li><strong>Claude Code CLI / agent mode</strong> — multi-file edits, autonomous runs. Scope tightly — unscoped agents burn tokens fast. Same engine and same <code>.claude/</code> config as the IDE extensions</li>
+        <li><strong>Claude.ai / web chat</strong> — docs, ADRs, brainstorming, non-code writing. No repo context overhead</li>
+        <li><strong>Batch API</strong> — bulk test gen, nightly summaries, log triage. Anything with no human waiting on it</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ── ROLE PLAYBOOK ── -->
+  <div class="panel" id="tab-role">
+    <div class="slabel">Select your role</div>
+    <div class="role-grid" id="roles"></div>
+    <div id="task-area"></div>
+    <div id="result-area"></div>
+  </div>
+
+  <!-- ── SDD GUIDE ── -->
+  <div class="panel" id="tab-sdd">
+    <div class="slabel">SDD command routing — model, effort and cost per step</div>
+    <div style="font-size:12px;color:#6b7280;margin:-.35rem 0 .7rem">Declare the tier once in each command's own frontmatter (<code>model:</code> / <code>effort:</code> in <code>SKILL.md</code>) and it applies automatically whenever that command runs. Mechanism, per-task escalation and the session trap are below.</div>
+    <div style="overflow-x:auto">
+    <table class="sddt">
+      <thead><tr><th>Command</th><th>Work type</th><th>Model</th><th>Effort</th><th>Why this tier &amp; how to keep it cheap</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><code>/speckit-constitution</code></td>
+          <td>Governance authoring<br><span class="lbadge ll">Low — rare runs</span></td>
+          <td><span class="mbadge mbo">Opus</span></td><td>high</td>
+          <td>Precedence layer that gates every plan — compliance-sensitive, and it runs rarely enough that the tier costs almost nothing in aggregate.
+            <span class="tac"><b>Save:</b> author once and reference it from later phases; don't regenerate it per feature.</span></td>
+        </tr>
+        <tr>
+          <td><code>/speckit-specify</code></td>
+          <td>Requirements / spec drafting <span style="color:#9ca3af">(step 1)</span><br><span class="lbadge lh">Med–High (one-time)</span></td>
+          <td><span class="mbadge mbo">Opus</span></td><td>high</td>
+          <td>Foundational artifact every later phase depends on. Errors here are the most expensive in the cycle to unwind, and it's a one-time cost.
+            <span class="tac"><b>Save:</b> write raw requirements yourself first and ask the model to structure and refine. Generate the spec once against a target template — avoid additive follow-ups.</span></td>
+        </tr>
+        <tr>
+          <td><code>/speckit-clarify</code></td>
+          <td>Gap-finding across repos<br><span class="lbadge lm">Low per run, high cumulative</span></td>
+          <td><span class="mbadge mbs">Sonnet</span></td><td>high</td>
+          <td>Multi-file reasoning with recoverable stakes — and the highest-volume command in the workflow, so savings compound here more than anywhere else.
+            <span class="tac"><b>Save:</b> load only the code indexes for repos the question actually touches, not all of them.</span></td>
+        </tr>
+        <tr>
+          <td><code>/speckit-plan</code></td>
+          <td>Design / technical plan <span style="color:#9ca3af">(step 2)</span><br><span class="lbadge lh">Med–High (one-time)</span></td>
+          <td><span class="mbadge mbo">Opus</span></td><td>high</td>
+          <td>Cross-system reasoning over large context; a wrong plan is expensive downstream.
+            <span class="tac"><b>Save:</b> feed the finished spec as context rather than re-summarising it. Cache stable architecture context. Ask for the plan in task-breakdown-ready format.</span></td>
+        </tr>
+        <tr>
+          <td><code>/speckit-tasks</code></td>
+          <td>Task breakdown <span style="color:#9ca3af">(step 3)</span><br><span class="lbadge ll">Low–Med</span></td>
+          <td><span class="mbadge mbs">Sonnet</span></td><td><strong>medium</strong></td>
+          <td>Mechanical transform of a finished plan — deep reasoning adds nothing. Not Haiku: cross-layer ordering still needs judgment.
+            <span class="tac"><b>Save:</b> generate the full task list in one call, and keep descriptions concise — long ones get re-read in every implementation call.</span></td>
+        </tr>
+        <tr>
+          <td><code>/speckit-implement</code></td>
+          <td>Implementation <span style="color:#9ca3af">(step 4)</span><br><span class="lbadge lh">Low per call, highest total</span></td>
+          <td><span class="mbadge mbs">Sonnet</span></td><td>high</td>
+          <td>The workhorse default for feature logic. Escalate <strong>per task, not per run</strong> — see the complexity tiers below.
+            <span class="tac"><b>Save:</b> pass only the relevant task and files, never the full spec each time. Scope the agent per task. Request diffs against scaffolding.</span></td>
+        </tr>
+        <tr>
+          <td><code>/speckit-checklist</code></td>
+          <td>Validation artifacts <span style="color:#9ca3af">(step 5)</span><br><span class="lbadge lm">Low–Med, high frequency</span></td>
+          <td><span class="mbadge mbs">Sonnet</span></td><td><strong>low</strong></td>
+          <td>Template-driven extraction from an existing spec. The cheapest routing in the workflow, and correctly so.
+            <span class="tac"><b>Save:</b> generate in batches per module, and reuse the acceptance criteria from step 3 as the test spec instead of re-deriving expected behaviour.</span></td>
+        </tr>
+        <tr>
+          <td><code>/speckit-analyze</code></td>
+          <td>Review &amp; iteration <span style="color:#9ca3af">(step 6)</span><br><span class="lbadge lh">Variable — spikes on scope change</span></td>
+          <td><span class="mbadge mbs">Sonnet</span></td><td>high</td>
+          <td>Non-destructive consistency read. Opus only for a major pivot.
+            <span class="tac"><b>Save:</b> update only the affected spec section rather than regenerating the doc. Version the spec so each revision states just the delta.</span></td>
+        </tr>
+        <tr>
+          <td><code>/speckit-converge</code></td>
+          <td>Codebase-vs-spec assessment<br><span class="lbadge lm">Med — scales with repo count</span></td>
+          <td><span class="mbadge mbs">Sonnet</span></td><td>high</td>
+          <td>Multi-repo read that only appends tasks, so the output is reviewable before it commits you to anything.
+            <span class="tac"><b>Save:</b> scope it to the repos the feature touches; a whole-estate sweep costs multiples of a targeted one.</span></td>
+        </tr>
+      </tbody>
+    </table>
+    </div>
+    <div style="font-size:12px;color:#6b7280;margin-top:.6rem"><strong>No SDD command belongs on Haiku</strong> — none matches that tier's work shape (see the Model Guide), and forcing one down breaks the golden rule's "correctly" clause. Haiku stays right for ad-hoc work <em>inside</em> a session, like summarising a long log before escalating.</div>
+
+    <div class="divider"></div>
+    <div class="slabel">Biggest sources of avoidable token spend — context strategy &amp; model routing</div>
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+      <div class="rbox">
+        <h3>1. Summary layer for large files</h3>
+        <ul class="rlist">
+          <li>For any reference file over ~100 lines, create a companion summary (~20–50 lines)</li>
+          <li>Load summary by default. Load full file only when authoring that specific section</li>
+          <li>Applies to: architecture docs, plans, contract bundles, runbooks</li>
+          <li style="color:#2563eb;font-weight:500">Directional estimate: most of that file's input cost, per command. Unmeasured — worth instrumenting on your own repos</li>
+        </ul>
+      </div>
+      <div class="rbox">
+        <h3>2. Scoped state/memory loading</h3>
+        <ul class="rlist">
+          <li>Tag each task with the module it touches</li>
+          <li>Load only state files for that module — not all state files in the project</li>
+          <li>6-module project, task touches 1 &rarr; load one sixth of the state files</li>
+          <li style="color:#2563eb;font-weight:500">Saving scales with module count, assuming modules are roughly comparable in size — skewed repos save less</li>
+        </ul>
+      </div>
+      <div class="rbox">
+        <h3>3. Prompt caching for static context</h3>
+        <ul class="rlist">
+          <li>Static content first in fixed order (<strong>tools &rarr; system &rarr; messages</strong>); variable content — the specific task, the target file — goes last, after the breakpoint</li>
+          <li>Hits require <strong>100% identical</strong> prompt segments up to the breakpoint. A change invalidates <strong>from that point forward</strong> along the tools &rarr; system &rarr; messages hierarchy &mdash; not necessarily the whole cache, since with several breakpoints an earlier prefix can still hit</li>
+          <li>Reads cost 0.1&times; base input; writes cost 1.25&times; (5-minute) or 2&times; (1-hour). Cache hits per MTok: <strong>$0.10</strong> Haiku 4.5, <strong>$0.20</strong> Sonnet 5 ($0.30 from Sep 1), <strong>$0.50</strong> Opus 5, <strong>$1</strong> Fable 5</li>
+          <li class="warn">&#x26A0; The minimum cacheable prefix is per-model and runs <em>opposite</em> to what you'd guess: <strong>512 tokens on Opus 5 and Fable 5, 1,024 on Sonnet 5, but 4,096 on Haiku 4.5</strong>. Below the floor nothing caches and <strong>no error is returned</strong> — so short conventions files cache fine on Opus and silently don't on Haiku</li>
+          <li class="warn">&#x26A0; Changing <code>effort</code> or <code>speed</code> mid-session <strong>invalidates cached prefixes</strong>, because both are rendered into the prompt. Anthropic's guidance: pick an effort level at the start of a session and keep it constant, varying it <em>across</em> workloads instead</li>
+          <li>The 5-minute TTL runs from the <strong>start of the request, not the end of the response</strong>, and refreshes free on every hit. A 4-minute Opus response leaves only ~1 minute to land the next call</li>
+          <li style="color:#2563eb;font-weight:500">Saving applies to <strong>cached input only</strong> — output is untouched. On that portion: ~32% at 2 calls, ~52% at 3, ~78% at 10. The "90%" headline needs ~100 reads of the same prefix</li>
+        </ul>
+      </div>
+      <div class="rbox">
+        <h3>4. Edit artifacts, don't re-run</h3>
+        <ul class="rlist">
+          <li>For small changes to spec/plan/task files — edit the artifact directly</li>
+          <li>Reserve full re-runs for genuine scope changes affecting majority of the document</li>
+          <li>Run analysis at deliberate gates (end of phase, pre-PR) not after every edit</li>
+          <li style="color:#2563eb;font-weight:500">Estimated saving: several thousand tokens per avoided re-run, scaling with artifact size</li>
+        </ul>
+      </div>
+
+      <div class="rbox" style="grid-column:1/-1">
+        <h3>5. Route the model per command — don't run a whole workflow on one tier</h3>
+        <ul class="rlist" style="margin-bottom:.85rem">
+          <li>Every SDD command is a <em>different work type</em>. Running them all on one session default means you either overpay for the cheap steps or under-serve the expensive ones — and the cheap steps are the frequent ones</li>
+          <li>Declare the tier <strong>once, in the command itself</strong> — <code>model:</code> and <code>effort:</code> in each skill's frontmatter. It then applies automatically for that turn and reverts after, so routing survives the person who set it up</li>
+          <li>Pin the project baseline in <code>.claude/settings.json</code> so anything unrouted lands on the workhorse rather than inheriting whatever tier the last session used</li>
+          <li><strong><code>effort:</code> is the half of this lever most teams ignore.</strong> The ladder is <code>low &middot; medium &middot; high &middot; xhigh &middot; max</code> and <strong>the API and Claude Code both default to <code>high</code></strong> &mdash; so most teams are paying for the second-highest rung by accident. Setting <code>high</code> explicitly is identical to omitting it</li>
+          <li>It moves more than thinking: effort affects <strong>all</strong> response tokens, <em>including how many tool calls Claude makes</em>. That is why it bites hardest on agentic runs</li>
+          <li>It is a <strong>tradeoff, not free money</strong> &mdash; lower effort buys speed and cost while accepting some reduction in capability. Anthropic's own calibration point is useful: <strong>Sonnet 5 at <code>medium</code> is comparable to Sonnet 4.6 at <code>high</code></strong></li>
+          <li class="warn">&#x26A0; On Opus 5, effort controls <em>thinking volume, not visible response length</em> &mdash; if you want shorter output, ask for it in the prompt. And <strong>Haiku 4.5 does not support <code>effort</code> at all</strong>, so it has no dial beyond the model choice itself</li>
+          <li style="color:#2563eb;font-weight:500">Order of magnitude, not a measurement: Sonnet runs ~40% cheaper per token than Opus at standard rates, before any effort reduction. Your actual saving depends on your phase mix — instrument it rather than quoting this number</li>
+        </ul>
+
+        <div style="background:#eef2ff;border:1px solid #c7d2fe;border-radius:8px;padding:.6rem .85rem;margin-bottom:.85rem;font-size:12px;color:#3730a3;line-height:1.5">
+          &#8593;&nbsp; <strong>The tier for each command is in the routing table at the top of this tab</strong> — model, effort and rationale per command, alongside the saving tactic for that step.
+        </div>
+
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px">
+          <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:.75rem .9rem">
+            <div class="rclabel" style="margin-bottom:.5rem">Within <code>/speckit-implement</code> — model per task, effort per run</div>
+            <ul class="rlist">
+              <li class="warn">&#x26A0; <strong>Read this before splitting effort per task.</strong> Anthropic's guidance is to hold effort constant inside a conversation that relies on caching, and to <strong>vary it across workloads rather than within a run</strong> &mdash; changing the value invalidates cached prefixes. So pick one effort level for the run and switch <em>model</em> per task, not both</li>
+              <li><strong>Trivial</strong> (renames, config, doc updates, boilerplate with a precedent) → Sonnet. Batch these into their own <code>low</code>-effort run rather than dropping effort mid-session</li>
+              <li><strong>Standard</strong> (a component, an endpoint, a test suite) → Sonnet at the run's effort level &mdash; the default</li>
+              <li><strong>Complex</strong> (auth/payments/safety-critical, named regression-risk areas, concurrency or ordering guarantees, novel algorithms) → Opus, high</li>
+              <li>Classify from the task's <em>own text</em> in <code>tasks.md</code>, not a guess. When unsure, stay put and re-read the acceptance criteria before escalating</li>
+              <li><strong>De-escalate the model the moment the complex task's tests pass</strong> — a session parked on Opus for the rest of the run is the whole saving gone</li>
+              <li>If a phase genuinely needs a different effort level, that is a signal to make it a <strong>separate run</strong>, which is what the routing table already does per command</li>
+            </ul>
+          </div>
+          <div style="background:#fff;border:1px solid #e5e7eb;border-radius:8px;padding:.75rem .9rem">
+            <div class="rclabel" style="margin-bottom:.5rem">The trap that cancels routing out</div>
+            <ul class="rlist">
+              <li class="warn">&#x26A0; Caches are <strong>model-scoped</strong>, so switching tier mid-session forfeits your cache hits and the remaining context is processed at the new model's rates. How much that costs depends on what gets sent and what still hits cache — but a cheap command run straight after an expensive one, in the same session, can erase the saving</li>
+              <li><strong>House practice, not an Anthropic requirement:</strong> <code>/clear</code> between phases, so a cheap command's routing applies to a small context rather than the previous phase's transcript</li>
+              <li>Worst offender: a Sonnet-<code>low</code> checklist run immediately after an Opus plan, in the same session</li>
+              <li>Audit frontmatter against the routing table above after every retier — a table that has drifted from the skills it documents is routing nothing</li>
+              <li style="color:#6b7280">General session discipline is in <strong>Tips &amp; Tricks &rarr; Session &amp; context management</strong>; the point here is only that per-command routing makes phase boundaries worth respecting</li>
+            </ul>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── WORKFLOWS ── -->
+  <div class="panel" id="tab-workflow">
+    <div class="wf-tabs">
+      <div class="wchip active" onclick="switchWf('debug')">&#128027; Debugging</div>
+      <div class="wchip" onclick="switchWf('docs')">&#128221; Documentation</div>
+      <div class="wchip" onclick="switchWf('arch')">&#127959; Architecture Design</div>
+      <div class="wchip" onclick="switchWf('dev')">&#128187; Day-to-Day Coding</div>
+    </div>
+
+    <div class="wfp active" id="wf-debug">
+      <div class="rbox"><h3>Debugging — avoid the instinct to paste everything</h3><ul class="rlist">
+        <li>Give a hypothesis, not just symptoms — "looks like a race condition between X and Y" focuses reasoning and shortens the conversation</li>
+        <li>Paste the minimal reproducible snippet — not the surrounding file or unrelated imports</li>
+        <li>Ask for root-cause explanation plus fix in one prompt — not 'what's wrong' then separately 'now fix it'</li>
+        <li>For flaky bugs: summarize the failure pattern yourself (or have Haiku do it cheaply) before escalating to Sonnet/Opus</li>
+      </ul></div>
+      <table class="sddt"><thead><tr><th>Stage</th><th>Model</th><th>Cost tip</th></tr></thead><tbody>
+        <tr><td>Reading / explaining an error or stack trace</td><td><span class="mbadge mbh">Haiku 4.5</span></td><td>Paste only the trace and the few lines it points to — not the whole file</td></tr>
+        <tr><td>Reproducing and isolating root cause in one function/module</td><td><span class="mbadge mbs">Sonnet</span></td><td>State what you've already ruled out so the model doesn't re-suggest it</td></tr>
+        <tr><td>Cross-service or hard-to-reproduce bugs (race conditions, P0 incidents)</td><td><span class="mbadge mbo">Opus 5</span></td><td>Worth the premium — context spans multiple files. Use Fable 5 for P0 incidents spanning many services.</td></tr>
+        <tr><td>Writing a regression test once the fix is found</td><td><span class="mbadge mbs">Sonnet</span></td><td>Combine 'fix the bug' and 'write a test for it' into one prompt instead of two separate calls</td></tr>
+      </tbody></table>
+    </div>
+
+    <div class="wfp" id="wf-docs">
+      <div class="rbox"><h3>Documentation — low-reasoning, high-volume. Ideal for cheap tiers and batching.</h3><ul class="rlist">
+        <li>Keep a standing house-style snippet (tone, structure, terminology) and cache it — bundle it large enough to clear your model's cache floor (4,096 tokens on Haiku)</li>
+        <li>Ask for output in the final target format (Markdown, OpenAPI) directly — avoid a second formatting pass</li>
+        <li>Batch doc-generation for an entire module or sprint's PRs in one Batch API job — not one interactive call per file</li>
+      </ul></div>
+      <table class="sddt"><thead><tr><th>Task</th><th>Model</th><th>Cost tip</th></tr></thead><tbody>
+        <tr><td>Docstrings / comments from existing code</td><td><span class="mbadge mbh">Haiku 4.5</span></td><td>Batch many functions/files into one prompt instead of one call per function</td></tr>
+        <tr><td>README or onboarding guide</td><td><span class="mbadge mbs">Sonnet</span></td><td>Provide an outline/template up front so the first draft is usable</td></tr>
+        <tr><td>Architecture Decision Records (ADRs)</td><td><span class="mbadge mbs">Sonnet</span></td><td>Give the decision, options, and tradeoffs as bullet points — let the model structure prose, not invent the reasoning</td></tr>
+        <tr><td>Release notes / changelog from merged PRs</td><td><span class="mbadge mbh">Haiku 4.5</span></td><td>Pure summarization — don't pay Sonnet/Opus rates for this</td></tr>
+        <tr><td>Compliance-sensitive or externally published docs</td><td><span class="mbadge mbo">Opus 5</span></td><td>Precision and tone consistency matter. Use Fable 5 for SOC2/FDA/legal-grade documentation.</td></tr>
+      </tbody></table>
+    </div>
+
+    <div class="wfp" id="wf-arch">
+      <div class="rbox"><h3>Architecture — precision per call, not cheapest-tier-first</h3><ul class="rlist">
+        <li>Load codebase or design docs once as cached context, then ask multiple narrow questions against it — not one re-paste per question</li>
+        <li>Ask the model to flag assumptions and unknowns explicitly — avoids an expensive second round-trip to catch a wrong assumption</li>
+        <li>Separate 'explore options' calls (Sonnet) from 'validate chosen option in depth' calls (Opus/Fable)</li>
+      </ul></div>
+      <table class="sddt"><thead><tr><th>Task</th><th>Model</th><th>Cost tip</th></tr></thead><tbody>
+        <tr><td>Brainstorming options for a new component</td><td><span class="mbadge mbs">Sonnet</span></td><td>Ask for 2–3 named options with tradeoffs — not an open-ended essay</td></tr>
+        <tr><td>Evaluating a design against NFRs (scalability, security, cost)</td><td><span class="mbadge mbs">Sonnet</span></td><td>Name the specific NFRs to check rather than asking for a generic review. Use Opus if cross-system.</td></tr>
+        <tr><td>Full system / cross-service architecture review</td><td><span class="mbadge mbo">Opus 5</span></td><td>Cache stable system context (service map, constraints). <strong>Don't escalate for window size</strong> — Sonnet 5, Opus 5 and Fable 5 all carry 1M context at standard rates. Escalate only when the reasoning is harder, not when the input is bigger.</td></tr>
+        <tr><td>Diagrams-as-text or interface contracts from a description</td><td><span class="mbadge mbs">Sonnet</span></td><td>Specify exact notation (Mermaid, OpenAPI, sequence diagram) to avoid regeneration pass</td></tr>
+        <tr><td>Build-vs-buy or major technology decision</td><td><span class="mbadge mbo">Opus 5</span></td><td>Mistakes are costly and hard to reverse. Use Fable 5 for multi-org or whole-platform decisions.</td></tr>
+      </tbody></table>
+    </div>
+
+    <div class="wfp" id="wf-dev">
+      <div class="rbox"><h3>Day-to-day coding — highest frequency, small per-call savings compound the most</h3><ul class="rlist">
+        <li>Keep high-frequency, low-reasoning calls on Haiku 4.5 — they fire constantly, so the per-call saving compounds faster here than anywhere else</li>
+        <li>Give agent mode a fixed file list or directory boundary — unscoped agents read far more of the repo than necessary</li>
+        <li>Ask for incremental diffs on existing files rather than full-file rewrites — this is the single highest-frequency chance to apply it</li>
+      </ul></div>
+      <table class="sddt"><thead><tr><th>Task</th><th>Model</th><th>Cost tip</th></tr></thead><tbody>
+        <tr><td>Boilerplate / scaffolding (CRUD endpoints, config files, simple components)</td><td><span class="mbadge mbh">Haiku 4.5</span></td><td>Templated output — don't pay Sonnet rates for pattern-matching</td></tr>
+        <tr><td>Implementing a well-specified feature or function</td><td><span class="mbadge mbs">Sonnet</span></td><td>Provide function signature, expected behaviour, and edge cases up front</td></tr>
+        <tr><td>Refactoring across a few files for clarity/performance</td><td><span class="mbadge mbs">Sonnet</span></td><td>Ask for a diff. State what must NOT change (public API, behaviour).</td></tr>
+        <tr><td>Large-scale or repo-wide refactor / migration</td><td><span class="mbadge mbs">Sonnet</span></td><td>Break into per-module tasks in scoped agent mode — not one giant unscoped agent run</td></tr>
+        <tr><td>PR review before merge</td><td><span class="mbadge mbs">Sonnet</span></td><td>Point at specific concerns (security, perf, style). Escalate to Opus 5 for auth/payments/safety-critical PRs — Fable 5 only if the review spans repos.</td></tr>
+      </tbody></table>
+    </div>
+  </div>
+
+  <!-- ── TIPS ── -->
+  <div class="panel" id="tab-tips">
+    <div class="tips-grid">
+      <div class="tip-card">
+        <h3>&#8595; Shrink input tokens</h3>
+        <ul>
+          <li>Share only the relevant function/class — not the whole file or repo</li>
+          <li>Strip comments, blank lines, and unrelated code from pasted snippets</li>
+          <li>Summarize long logs to relevant lines first (Haiku pre-pass is cheap)</li>
+          <li>Cache reused context (system prompts, style guides, schemas) — reads cost 0.1&times; input, but the first write costs 1.25&times;, so it only pays from the second reuse onward</li>
+          <li>Avoid re-sending full conversation history when a fresh focused prompt would do</li>
+          <li>Reference reusable context by name/link where the tool supports it</li>
+        </ul>
+      </div>
+      <div class="tip-card">
+        <h3>&#8593; Shrink output tokens</h3>
+        <ul>
+          <li>Ask for a diff or patch — not a full file rewrite when only part changes</li>
+          <li>Set explicit limits: "in 3 bullet points," "under 100 words," "return only the function"</li>
+          <li>Ask for code without inline prose when you only need the code</li>
+          <li>Request structured output (table, JSON, fixed template) — shorter than free-form prose</li>
+          <li>Step <code>effort</code> down for routine tasks &mdash; on Sonnet 5, Opus 5 and Fable 5 that is the control, since they use adaptive thinking and manual extended thinking is not available (Sonnet 5 returns a 400 error for it)</li>
+        </ul>
+      </div>
+      <div class="tip-card">
+        <h3>&#128222; Reduce number of calls</h3>
+        <ul>
+          <li>Batch related asks into a single prompt ("review these 4 functions")</li>
+          <li>Front-load constraints so the first response is usable — avoid 2–3 correction follow-ups</li>
+          <li>Non-urgent high-volume work &rarr; Batch API (half the cost, no babysitting)</li>
+          <li>Don't make 'just checking' calls — trust and verify locally where possible</li>
+        </ul>
+      </div>
+      <div class="tip-card">
+        <h3>&#9881; Model &amp; tooling hygiene</h3>
+        <ul>
+          <li>Set Sonnet as team default — Haiku/Opus/Fable require conscious escalation</li>
+          <li>Audit usage dashboards regularly for model-routing drift toward expensive defaults</li>
+          <li>Keep tool/function schemas lean in agentic setups — every schema adds fixed overhead per call</li>
+          <li>Claude Code shares your editor selection and diagnostics with the session — run <code>/context</code> for a live breakdown of what is actually loaded, including which <code>CLAUDE.md</code> and memory files came in</li>
+          <li>Right-size context windows — don't load 200K+ tokens for a 50-line question</li>
+        </ul>
+      </div>
+      <div class="tip-card wide">
+        <h3>&#128336; Session &amp; context management</h3>
+        <ul>
+          <li>Stay in the same session for a continuous task — switching means re-explaining context</li>
+          <li>Don't keep one session running across unrelated tasks — every new message re-bills all prior history</li>
+          <li>For a multi-step task (implement &rarr; test &rarr; fix), keep it in one session</li>
+          <li>When session grows long and only recent exchanges matter, start fresh with a short recap</li>
+          <li>Avoid running the same task in parallel across multiple sessions 'to compare answers'</li>
+          <li>Don't switch models mid-task without reason — caches are model-scoped, so you forfeit cache hits and the remaining context is reprocessed at the new model's rates</li>
+          <li>Use built-in memory/project context features instead of re-pasting background info every session</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+    <div class="slabel">&#9989; Checklist</div>
+    <div class="cl-grid">
+      <div class="cl-card">
+        <h3>Before every AI call</h3>
+        <ul>
+          <li>Cheapest tier that does the job correctly?</li>
+          <li>Full prompt built (goal + constraints + minimal context + output format)?</li>
+          <li>Context trimmed to what's relevant — no whole files or logs 'just in case'?</li>
+          <li>Asking for a diff/patch, not a full file rewrite?</li>
+          <li>Output format and length specified up front?</li>
+          <li>Agent mode only if the task genuinely needs multi-file autonomy?</li>
+          <li>Could this wait? Non-urgent bulk work belongs on the Batch API, not an interactive call</li>
+        </ul>
+      </div>
+      <div class="cl-card">
+        <h3>Ongoing hygiene</h3>
+        <ul>
+          <li>Review usage dashboards by team and task type for routing drift — defaults creep upward without active discipline</li>
+          <li>Prices, cache floors and model names change — verify against Anthropic's own pricing and prompt-caching docs, not third-party summaries</li>
+          <li>Anthropic is retiring models on a ~60-day notice cadence — check the deprecations page each month, not each quarter</li>
+          <li>This guide reflects August 2026 — revisit monthly as the model lineup evolves</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <div class="footer">
+    AI Token &amp; Model Cost Optimization Playbook &nbsp;·&nbsp; Spend Smarter, Not Harder &nbsp;·&nbsp; <strong>Verified August 10, 2026</strong> against Anthropic's <a href="https://platform.claude.com/docs/en/build-with-claude/prompt-caching" target="_blank">prompt caching</a>, <a href="https://platform.claude.com/docs/en/about-claude/pricing" target="_blank">pricing</a> and <a href="https://platform.claude.com/docs/en/build-with-claude/fast-mode" target="_blank">fast mode</a> documentation. Re-verify before budgeting &mdash; the model lineup moves monthly
+  </div>
+</div>
+
+<script>
+const roleData = {
+  "Developer": { tasks:[
+    {l:"Syntax / API lookup",s:"Quick answer",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["Pure pattern-matching, no reasoning needed","Highest-volume task — savings compound fast"],tip:"Use Haiku for all quick lookups. Never escalate this.",esc:""},
+    {l:"Code review / refactor",s:"Function or PR level",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Needs real reasoning but stakes are recoverable","Provide the diff — not the whole file"],tip:"Pass only the diff. State what must NOT change (public API, behaviour).",esc:""},
+    {l:"Unit test writing",s:"Existing code",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Batch multiple functions into one prompt saves most"],tip:"Batch 5+ functions in one call. Use Haiku for boilerplate-only tests.",esc:"Haiku for boilerplate-only tests"},
+    {l:"Multi-file feature implementation",s:"Agent mode task",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Agent mode, scoped tightly to specific files","Define exact file boundaries up front"],tip:"Give the agent a fixed file list. Unscoped agents burn far more tokens.",esc:""},
+    {l:"Security / auth / payments",s:"High-stakes change",m:"Opus",mc:"mbo",ml:"Opus 5",why:["Mistakes expensive and hard to reverse","Opus 5 is near-Fable on coding benchmarks at half the rate"],tip:"Opus 5 is the tier for auth, payments and data migrations. Never cut corners — but don't reach for Fable 5 unless the work is also multi-repo agentic or a live P0.",esc:"Fable 5 only if multi-repo agentic or P0"},
+    {l:"Quick inline edits / small fixes",s:"Single-function scope",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["Fires constantly — never point at a premium model","Highest-frequency call type in day-to-day work"],tip:"Keep these on Haiku. Highest-volume call type, so it is the single biggest volume lever.",esc:""},
+  ]},
+  "QA Engineer": { tasks:[
+    {l:"Routine test cases from a spec",s:"Simple / CRUD",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["Simple CRUD cases need no heavy reasoning","Use Sonnet only for edge-case-heavy logic"],tip:"Batch all cases for one module into one call.",esc:"Sonnet for complex logic"},
+    {l:"Bulk test data generation",s:"Hundreds of records",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["Textbook batch-processing use case","No latency needed — async saves ~50%"],tip:"Route to Batch API. Async, half the cost.",esc:""},
+    {l:"Bug triage / clustering",s:"High volume",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["High volume, low complexity per item"],tip:"Haiku for clustering. Escalate only cases needing root-cause reasoning.",esc:""},
+    {l:"Flaky test root cause",s:"Complex failure",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Needs real reasoning over trace + code"],tip:"State what you've already ruled out. Distinguish 'test is wrong' from 'app is wrong'.",esc:""},
+    {l:"Test strategy document",s:"Full regression plan",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["One well-built prompt beats iterative drafting"],tip:"Write one prompt with full feature scope and target structure.",esc:""},
+    {l:"Compliance coverage review",s:"Regulatory",m:"Opus",mc:"mbo",ml:"Opus 5",why:["Missing a requirement has high consequences","Stakes justify the premium"],tip:"Use Fable 5 for highest-stakes regulatory or safety-critical reviews.",esc:"Fable 5 for safety-critical"},
+  ]},
+  "Product Manager": { tasks:[
+    {l:"Summarize customer feedback",s:"Tickets / research",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["High volume, pattern-extraction task","No reasoning needed — pure summarization"],tip:"Route all ticket/feedback summarization to Haiku.",esc:""},
+    {l:"User story / acceptance criteria",s:"First draft",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Needs reasoning to match format and context"],tip:"Give the template and format up front so the first draft is usable.",esc:""},
+    {l:"PRD / roadmap narrative",s:"Stakeholder doc",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Build prompt with goal, audience, structure","One well-structured call beats iterative drafting"],tip:"Specify tone, length, and audience in the first prompt. Avoid follow-up corrections.",esc:""},
+    {l:"Competitive / market analysis",s:"Drives major decision",m:"Opus",mc:"mbo",ml:"Opus 5",why:["Nuanced judgment, high-stakes output"],tip:"Use Fable 5 only for board/exec-level strategic decisions.",esc:"Fable 5 for exec-level strategy"},
+    {l:"Rewording / tone adjustment",s:"Short transformation",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["Simple transformation — never needs Sonnet/Opus"],tip:"Specify target tone and length. Get it right first time — don't iterate.",esc:""},
+  ]},
+  "Architect": { tasks:[
+    {l:"Quick pattern / technical lookup",s:"Reference question",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["Junior engineer answers in <2 min","Reserve Opus for genuinely hard problems"],tip:"Default Haiku for reference questions.",esc:"Sonnet if reasoning needed"},
+    {l:"Design doc / ADR review",s:"Gap analysis",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Needs reasoning but scope is bounded"],tip:"Name specific NFRs to check instead of 'review this'.",esc:"Opus if cross-system"},
+    {l:"Cross-system architecture analysis",s:"Large codebase",m:"Opus",mc:"mbo",ml:"Opus 5",why:["Long-context, high-stakes reasoning","Cache stable parts, vary only the question"],tip:"Cache the service map. Ask multiple narrow questions in one session.",esc:"Fable 5 for whole-platform redesign"},
+    {l:"Diagrams / interface contracts",s:"From description",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Well-defined output keeps responses tight"],tip:"Specify exact notation (Mermaid, OpenAPI) to avoid regeneration.",esc:""},
+    {l:"Build-vs-buy / major tech decision",s:"High-stakes choice",m:"Opus",mc:"mbo",ml:"Opus 5",why:["Mistakes costly and hard to reverse","Precision matters most here"],tip:"Use Fable 5 for multi-org or whole-platform decisions.",esc:"Fable 5 for multi-org decisions"},
+  ]},
+  "QE / Automation": { tasks:[
+    {l:"Boilerplate automation scripts",s:"Page objects, fixtures",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["Highly templated — don't pay Sonnet rates"],tip:"Cache your framework conventions as a reused reference. Note Haiku needs a 4,096-token prefix before anything caches — bundle conventions together to clear it.",esc:""},
+    {l:"Complex automated test suites",s:"Multi-step UI/API",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Needs reasoning over flow + framework conventions"],tip:"Provide user flow and existing framework conventions. Not the whole test repo.",esc:""},
+    {l:"Debug a flaky / failing test",s:"Failing automation",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Focused reasoning over failure output + code"],tip:"Paste only the failure output and specific test. State what's already ruled out.",esc:""},
+    {l:"Test framework / architecture design",s:"New framework",m:"Opus",mc:"mbo",ml:"Opus 5",why:["High-stakes, long-horizon decision for whole team"],tip:"Use Fable 5 for complex multi-service test architecture.",esc:"Fable 5 for multi-service arch"},
+    {l:"Bulk manual → automated conversion",s:"At scale",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["High-volume, low-reasoning-per-item","Ideal batch candidate"],tip:"Route to Batch API. Async, half the cost.",esc:""},
+  ]},
+  "UI/UX Designer": { tasks:[
+    {l:"Microcopy / button / label text",s:"Quick copy",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["Simple, short transformation task"],tip:"Specify target tone and character limit up front.",esc:""},
+    {l:"User flows / wireframe annotations",s:"Component specs",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Needs reasoning to match requirements to format"],tip:"Give requirement and target audience. Ask for output in your design-doc format.",esc:""},
+    {l:"Usability test script / interview guide",s:"Research guide",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Needs focused reasoning, bounded output"],tip:"State research goal and number of questions — prevents over-long output.",esc:""},
+    {l:"A11y / WCAG review",s:"Accessibility audit",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Named criteria = focused, cheaper output"],tip:"Name specific WCAG criteria. Use Opus for regulated/high-traffic products.",esc:"Opus for regulated products"},
+    {l:"Research synthesis from transcripts",s:"Many user notes",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["Two-step: cheap cluster pass then one summary call","Feeding all raw transcripts to Sonnet is wasteful"],tip:"Summarize each note with Haiku first, then ask Sonnet to synthesize the short summaries.",esc:"Sonnet for final synthesis"},
+    {l:"Design system / cross-product UX strategy",s:"High-stakes",m:"Opus",mc:"mbo",ml:"Opus 5",why:["Affects whole product line","High-stakes, long-horizon decision"],tip:"Use Fable 5 for cross-platform, multi-brand design systems.",esc:"Fable 5 for multi-brand"},
+  ]},
+  "DevOps / SRE": { tasks:[
+    {l:"CLI / command syntax / config snippet",s:"Quick lookup",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["Highest-volume DevOps task","Defaulting to Sonnet here is one of the most common costly mistakes"],tip:"This fires constantly. Never escalate lookups.",esc:""},
+    {l:"CI/CD / IaC / Dockerfile writing",s:"Writing or reviewing",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Needs real reasoning over config + constraints"],tip:"Provide only the relevant file/module plus the specific constraint (cloud target, security policy).",esc:""},
+    {l:"Alert / log triage and summaries",s:"Monitoring",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["High volume, low reasoning per alert"],tip:"Batch API for nightly summaries. Interactive only when immediate human action needed.",esc:""},
+    {l:"Live incident / outage RCA",s:"Root-cause analysis",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Time-sensitive — tight prompt beats exhaustive one"],tip:"Extract specific time window and affected services. Don't paste entire dashboards.",esc:"Opus for cross-system / P0; Fable for major P0"},
+    {l:"Capacity planning / major migration",s:"Infra decision",m:"Opus",mc:"mbo",ml:"Opus 5",why:["Long-horizon, cross-system, high-stakes reasoning"],tip:"Use Fable 5 for major cloud migrations or cost analyses spanning full infrastructure.",esc:"Fable 5 for full-infra migrations"},
+    {l:"Runbook / postmortem documentation",s:"Docs",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Documentation task — well-defined output"],tip:"Provide incident timeline and a fixed template. Treat as a documentation task.",esc:""},
+  ]},
+  "Eng Manager": { tasks:[
+    {l:"1:1 prep / talking points",s:"Quick agenda",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["Simple structuring task — no heavy reasoning needed","High frequency across a team of 6–10"],tip:"Bullet the topics you have in mind; ask Haiku to structure into agenda + time splits.",esc:""},
+    {l:"Performance review / feedback draft",s:"Per direct report",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Needs nuanced reasoning over evidence and tone","Stakes recoverable — you review and edit before sending"],tip:"Paste raw observations and examples. Ask for draft in your org's review format. Never let the model invent examples.",esc:"Opus if highly contested or formal PIP"},
+    {l:"Team status / sprint update comms",s:"Stakeholder update",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["Structured summarization — pattern-matching task","High frequency, low reasoning per update"],tip:"Feed bullet notes; specify audience (exec vs peers) and target length.",esc:"Sonnet if narrative requires nuanced context"},
+    {l:"Hiring: JD / interview plan drafting",s:"Role definition",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Needs reasoning to align role scope, level, and bar","One well-structured call beats iterative drafting"],tip:"Give level, team context, and must-have vs nice-to-have skills up front. Specify output format.",esc:""},
+    {l:"Escalation / difficult conversation prep",s:"Sensitive situation",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Needs reasoning over context, tone, and likely reactions","Stakes are real but recoverable with good framing"],tip:"Describe the situation, what outcome you want, and what you want to avoid. Ask for multiple framings.",esc:"Opus for formal disciplinary or legal-adjacent situations"},
+    {l:"Org strategy / team roadmap narrative",s:"Exec-level doc",m:"Opus",mc:"mbo",ml:"Opus 5",why:["High-stakes, long-horizon — shapes team direction and headcount","Wrong framing is expensive to correct after exec review"],tip:"Give the business context, constraints, and audience. Ask for 2–3 framing options before committing to one.",esc:"Fable 5 for multi-org reorg or business case to leadership"},
+    {l:"9-box / talent calibration prep",s:"Team assessment",m:"Sonnet",mc:"mbs",ml:"Sonnet 5",why:["Needs reasoning to synthesise evidence across reports","Bounded output — structured grid, not open-ended essay"],tip:"Feed raw observations per person. Ask for draft justifications only — never let the model invent behaviours.",esc:""},
+    {l:"AI cost / usage review for the team",s:"Usage analysis",m:"Haiku",mc:"mbh",ml:"Haiku 4.5",why:["Summarization of structured data — no deep reasoning needed"],tip:"Export usage CSV; ask Haiku to summarise by model tier and flag outliers. Escalate to Sonnet only for narrative insights.",esc:"Sonnet for written insight summary"},
+  ]}
+};
+
+let selRole=null, selTask=null;
+
+function renderRoles(){
+  document.getElementById("roles").innerHTML=Object.keys(roleData).map(r=>`
+    <div class="chip${selRole===r?" active":""}" onclick="pickRole('${r}')">${r}</div>`).join("");
+}
+
+function pickRole(r){selRole=r;selTask=null;renderRoles();renderTasks();renderResult();}
+
+function renderTasks(){
+  const el=document.getElementById("task-area");
+  if(!selRole){el.innerHTML="";return;}
+  el.innerHTML=`<div class="divider"></div><div class="slabel">What are you working on?</div>
+    <div class="task-grid">${roleData[selRole].tasks.map((t,i)=>`
+      <div class="tchip${selTask===i?" active":""}" onclick="pickTask(${i})">${t.l}
+        <span class="tsub">${t.s}</span>
+      </div>`).join("")}</div>`;
+}
+
+function pickTask(i){selTask=i;renderTasks();renderResult();}
+
+function renderResult(){
+  const el=document.getElementById("result-area");
+  if(selTask===null){
+    el.innerHTML=selRole?`<div class="empty-s">Pick a task above to get your recommendation.</div>`:"";
+    return;
+  }
+  const t=roleData[selRole].tasks[selTask];
+  el.innerHTML=`
+    <div class="rbox-result">
+      <div class="rhead">
+        <span class="mbadge ${t.mc}">${t.ml}</span>
+        <div>
+          <div style="font-size:14px;font-weight:600">${t.l}</div>
+          ${t.esc?`<div style="font-size:11px;color:#9ca3af;margin-top:2px">Escalate: ${t.esc}</div>`:""}
+        </div>
+      </div>
+      <div class="rcols">
+        <div class="rcol">
+          <div class="rclabel">Why this model</div>
+          ${t.why.map(w=>`<div class="wli">${w}</div>`).join("")}
+        </div>
+        <div class="rcol" style="grid-column:span 2">
+          <div class="rclabel">Prompt tip</div>
+          <div style="font-size:13px;color:#4b5563;line-height:1.5">${t.tip}</div>
+        </div>
+      </div>
+    </div>`;
+}
+
+function switchTab(id){
+  const ids=["model","role","sdd","workflow","tips"];
+  document.querySelectorAll(".tab").forEach((t,i)=>t.classList.toggle("active",ids[i]===id));
+  document.querySelectorAll(".panel").forEach(p=>p.classList.remove("active"));
+  document.getElementById("tab-"+id).classList.add("active");
+}
+
+function switchWf(id){
+  const ids=["debug","docs","arch","dev"];
+  document.querySelectorAll(".wchip").forEach((c,i)=>c.classList.toggle("active",ids[i]===id));
+  document.querySelectorAll(".wfp").forEach(p=>p.classList.remove("active"));
+  document.getElementById("wf-"+id).classList.add("active");
+}
+
+renderRoles();
+</script>
+</body>
+</html>
